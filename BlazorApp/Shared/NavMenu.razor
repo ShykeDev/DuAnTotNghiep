@@ -1,0 +1,25 @@
+﻿@inject NavigationManager MyNavigationManager
+
+<ul class="menu-inner py-1">
+    <li class="menu-item  @currentNavMenu("")">
+        <a class="menu-link" href="">
+            <i class="menu-icon tf-icons bx bx-home"></i>
+            <div>Home</div>
+        </a>
+    </li>
+    <li class="menu-item  @currentNavMenu("kkkkkkkk")">
+        <a class="menu-link" href="kkkkkkkk">
+            <i class="menu-icon tf-icons bx bx-error"></i>
+            <div>Page Not Found</div>
+        </a>
+    </li>
+</ul>
+@code {
+    public string currentNavMenu(string menu)
+    {
+        string path = MyNavigationManager.ToBaseRelativePath(MyNavigationManager.Uri);
+        if (string.IsNullOrEmpty(menu) && string.IsNullOrEmpty(path)) return "active";
+        else if (string.IsNullOrEmpty(menu) && !string.IsNullOrEmpty(path)) return "";
+        else return path.Contains(menu) ? "active" : "";
+    }
+}

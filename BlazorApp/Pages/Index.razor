@@ -1,0 +1,121 @@
+﻿@page "/"
+@inject IJSRuntime JS
+
+<PageTitle>Index</PageTitle>
+
+<button type="button" class="btn rounded-pill btn-primary" @onclick="SetStock">Demo UI</button>
+
+@if (showConfirm)
+{
+    <div class="modal show d-block" tabindex="-1" style="display: block; background: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmation</h5>
+                    <button type="button" class="btn-close" aria-label="Close" @onclick="() => showConfirm = false"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => ConfirmResponse(false)">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="() => ConfirmResponse(true)">Yes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (showPrompt)
+{
+    <div class="modal show d-block" tabindex="-1" style="display: block; background: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Input Required</h5>
+                    <button type="button" class="btn-close" aria-label="Close" @onclick="() => showPrompt = false"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Take some input:</p>
+                    <input type="text" class="form-control" @bind="promptInput" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => PromptResponse(null)">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="() => PromptResponse(promptInput)">Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="bs-toast toast toast-placement-ex m-2 fade bg-primary top-0 end-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="2000">
+    <div class="toast-header">
+        <i class="bx bx-bell me-2"></i>
+        <div class="me-auto fw-medium">Bootstrap</div>
+        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+    <div class="toast-body">@toastMessage</div>
+</div>
+
+@code {
+    private bool showConfirm = false;
+    private bool showPrompt = false;
+    private string promptInput;
+    private string toastMessage;
+    private TaskCompletionSource<bool> confirmTask;
+    private TaskCompletionSource<string> promptTask;
+    private ElementReference toastElement;
+
+    private async Task SetStock()
+    {
+        StateHasChanged();
+
+        confirmTask = new TaskCompletionSource<bool>();
+        showConfirm = true;
+        StateHasChanged();
+        bool confirmed = await confirmTask.Task;
+        showConfirm = false;
+        StateHasChanged();
+
+        if (confirmed)
+        {
+            promptTask = new TaskCompletionSource<string>();
+            showPrompt = true;
+            StateHasChanged();
+            await promptTask.Task;
+            showPrompt = false;
+            StateHasChanged();
+
+            if (!string.IsNullOrEmpty(promptInput))
+            {
+                toastMessage = $"You entered: {promptInput}"; // Store the user input in the toast message
+                await ShowToast();
+                promptInput = string.Empty;
+            }
+        }
+    }
+
+    private void ConfirmResponse(bool response)
+    {
+        confirmTask.SetResult(response);
+    }
+
+    private void PromptResponse(string response)
+    {
+        promptTask.SetResult(response);
+    }
+
+    private async Task ShowToast()
+    {
+        await JS.InvokeVoidAsync("showBootstrapToast");
+    }
+}
+
+<script>
+    window.showBootstrapToast = () => {
+        const toastEl = document.querySelector('.toast');
+        const toast = new bootstrap.Toast(toastEl);
+
+        toast.show();
+    };
+</script>
