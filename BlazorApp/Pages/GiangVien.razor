@@ -1,0 +1,77 @@
+﻿@page "/teacher"
+@using BlazorApp.Model
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager Navigation
+@inject AssignmentService AssignmentService
+
+<h3>Teacher Dashboard</h3>
+
+<div class="container mt-4">
+    <div class="form-group">
+        <label for="title">Title</label>
+        <input id="title" @bind="title" class="form-control" placeholder="Title" />
+    </div>
+    <div class="form-group">
+        <label for="description">Description</label>
+        <textarea id="description" @bind="description" class="form-control" placeholder="Description"></textarea>
+    </div>
+    <div class="form-group">
+        <label for="dueDate">Due Date</label>
+        <input id="dueDate" @bind="dueDate" type="date" class="form-control" />
+    </div>
+    <button class="btn btn-primary mt-3" @onclick="SendAssignment">Send Assignment</button>
+</div>
+
+
+<ul>
+    @foreach (var assignment in assignments)
+    {
+        <li>@assignment.Title - @assignment.DueDate</li>
+    }
+</ul>
+
+@code {
+    private HubConnection hubConnection;
+    private string title;
+    private string description;
+    private DateTime dueDate = DateTime.Now;
+    private List<Assignment> assignments = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await InitializeHubConnection();
+        assignments = AssignmentService.GetAssignments();
+    }
+
+    private async Task InitializeHubConnection()
+    {
+        if (hubConnection == null)
+        {
+            hubConnection = new HubConnectionBuilder()
+                .WithUrl(Navigation.ToAbsoluteUri("/assignmenthub"))
+                .Build();
+
+            hubConnection.On<Assignment>("ReceiveAssignment", (assignment) =>
+            {
+                InvokeAsync(StateHasChanged);
+            });
+
+            await hubConnection.StartAsync();
+        }
+    }
+
+    private async Task SendAssignment()
+    {
+        var assignment = new Assignment
+        {
+            Title = title,
+            Description = description,
+            DueDate = dueDate
+        };
+
+        if (hubConnection != null)
+        {
+            await hubConnection.SendAsync("SendAssignment", assignment);
+        }
+    }
+}

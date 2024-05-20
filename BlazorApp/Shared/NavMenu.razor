@@ -1,25 +1,49 @@
 ﻿@inject NavigationManager MyNavigationManager
 
 <ul class="menu-inner py-1">
-    <li class="menu-item  @currentNavMenu("")">
-        <a class="menu-link" href="">
+    <li class="menu-item cursor-pointer">
+        <a class="menu-link" href="/">
             <i class="menu-icon tf-icons bx bx-home"></i>
             <div>Home</div>
         </a>
     </li>
-    <li class="menu-item  @currentNavMenu("kkkkkkkk")">
-        <a class="menu-link" href="kkkkkkkk">
-            <i class="menu-icon tf-icons bx bx-error"></i>
-            <div>Page Not Found</div>
+    <li class="menu-item cursor-pointer">
+        <a class="menu-link" href="/chat">
+            <i class="menu-icon tf-icons bx bx-chat"></i>
+            <div>Chat</div>
+        </a>
+    </li>
+    <li class="menu-item cursor-pointer">
+        <a class="menu-link" href="/teacher">
+            <i class="menu-icon tf-icons bx bx-chat"></i>
+            <div>Giảng Viên</div>
+        </a>
+    </li>
+    <li class="menu-item cursor-pointer">
+        <a class="menu-link" href="/student">
+            <i class="menu-icon tf-icons bx bx-chat"></i>
+            <div>Học Sinh</div>
         </a>
     </li>
 </ul>
-@code {
-    public string currentNavMenu(string menu)
-    {
-        string path = MyNavigationManager.ToBaseRelativePath(MyNavigationManager.Uri);
-        if (string.IsNullOrEmpty(menu) && string.IsNullOrEmpty(path)) return "active";
-        else if (string.IsNullOrEmpty(menu) && !string.IsNullOrEmpty(path)) return "";
-        else return path.Contains(menu) ? "active" : "";
-    }
-}
+
+<script>
+    $(document).ready(function () {
+        function updateActiveMenu() {
+            var path = window.location.pathname;
+            console.log(path);
+            $('.menu-item').removeClass('active');
+            $('.menu-item a').each(function () {
+                var href = $(this).attr('href');
+                if (path === href) {
+                    $(this).parent().addClass('active');
+                }
+            });
+        }
+        updateActiveMenu();
+        $('.menu-item a').on('click', function () {
+            $('.menu-item').removeClass('active');
+            $(this).parent().addClass('active');
+        });
+    });
+</script>

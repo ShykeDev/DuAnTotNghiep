@@ -1,0 +1,96 @@
+﻿@page "/student"
+@using BlazorApp.Model
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager Navigation
+@inject AssignmentService AssignmentService
+
+<h3>Student Dashboard</h3>
+
+<ul>
+    @foreach (var assignment in assignments)
+    {
+        <li>@assignment.Title - @assignment.DueDate
+            <button @onclick="() => JoinAssignmentGroup(assignment.Id)">Join</button>
+        </li>
+    }
+</ul>
+
+@if (currentAssignment != null)
+{
+    <h4>@currentAssignment.Title</h4>
+    <p>@currentAssignment.Description</p>
+    <input @bind="studentName" placeholder="Your Name" />
+    <button @onclick="SubmitAssignment">Submit Assignment</button>
+
+    <ul>
+        @foreach (var submission in submissions)
+        {
+            <li>@submission.StudentName - @submission.SubmittedAt</li>
+        }
+    </ul>
+}
+
+@code {
+    private HubConnection hubConnection;
+    private List<Assignment> assignments = new();
+    private Assignment currentAssignment;
+    private string studentName;
+    private List<Submission> submissions = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await InitializeHubConnection();
+        assignments = AssignmentService.GetAssignments();
+    }
+
+    private async Task InitializeHubConnection()
+    {
+        if (hubConnection == null)
+        {
+            hubConnection = new HubConnectionBuilder()
+                .WithUrl(Navigation.ToAbsoluteUri("/assignmenthub"))
+                .Build();
+
+            hubConnection.On<Assignment>("ReceiveAssignment", (assignment) =>
+            {
+                InvokeAsync(StateHasChanged);
+            });
+
+            hubConnection.On<Submission>("ReceiveSubmission", (submission) =>
+            {
+                if (currentAssignment != null && submission.AssignmentId == currentAssignment.Id)
+                {
+                    submissions.Add(submission);
+                    InvokeAsync(StateHasChanged);
+                }
+            });
+
+            await hubConnection.StartAsync();
+        }
+    }
+
+    private async Task JoinAssignmentGroup(int assignmentId)
+    {
+        if (hubConnection != null)
+        {
+            await hubConnection.SendAsync("JoinAssignmentGroup", assignmentId);
+            currentAssignment = assignments.First(a => a.Id == assignmentId);
+            submissions = AssignmentService.GetSubmissions(assignmentId);
+        }
+    }
+
+    private async Task SubmitAssignment()
+    {
+        var submission = new Submission
+        {
+            AssignmentId = currentAssignment.Id,
+            StudentName = studentName,
+            SubmittedAt = DateTime.Now
+        };
+
+        if (hubConnection != null)
+        {
+            await hubConnection.SendAsync("SubmitAssignment", submission);
+        }
+    }
+}
